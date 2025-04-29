@@ -1,0 +1,430 @@
+# vuex
+
+## vuex是什么？
+
+Vuex 是一个专为 Vue.js 应用程序开发的**状态管理模式 + 库**。它采用集中式存储 管理 应用的所有组件的状态，并以相应的规则保证状态以一种可预测的方式发生变化。
+
+## vuex安装
+
+这里使用npm进行安装
+
+```powershell
+npm install vuex@next --save
+```
+
+## 基本概念
+
+### 1. store
+
+每一个 Vuex 应用的核心就是 store（仓库）。“store”基本上就是一个容器，它包含着你的应用中大部分的**状态 (state)**。Vuex 和单纯的全局对象有以下两点不同：
+
+1. Vuex 的状态存储是响应式的。当 Vue 组件从 store 中读取状态的时候，若 store 中的状态发生变化，那么相应的组件也会相应地得到高效更新。
+2. 你不能直接改变store 中的状态。改变 store 中的状态的唯一途径就是显式地**提交 (commit) mutation**。这样使得我们可以方便地跟踪每一个状态的变化，从而让我们能够实现一些工具帮助我们更好地了解我们的应用。
+
+### 2. State
+
+在state中记录了各种数据的初始状态，相当于vue中的data，后续可以通过方法对数据状态进行修改。
+
+### 3. Getter
+
+由state派生出来的一些状态，相当于vue中的computed。
+
+### 4. Mutation
+
+更改 Vuex 的 store 中的状态的唯一方法是提交 mutation。这里面书写各种方法，相当于vue中的method，但又不完全一致，它只允许运行非异步的方法。
+
+### 5. Action
+
+对mutation的补充， 类似于 mutation，不同在于：
+
+- Action 提交的是 mutation，而不是直接变更状态。
+- Action 可以包含任意异步操作。
+
+#### 6. Module
+
+Vuex 采用的将 store 分割成**模块（module）**以处理记录状态的全局store对象过于臃肿庞大的情况。
+
+## vuex的使用以及配置文件的细化抽离
+
+1.在`main.js`中配置并使用vuex
+
+```js
+import Vue from 'vue'; //导入vue
+import App from "./App.vue";//导入根组件
+import Vuex from 'vuex'; //导入vuex
+Vue.use(Vuex);//在vue中安装应用vuex插件
+//创建一个store实例
+const store = new Vuex.Store({
+    .../*在这里面对仓库进行配置*/
+});
+new Vue({
+  store,//将配置好的store实例注入到vue实例中，以便后续可以通过this.$store可以让vue组件访问到仓库。
+  render: (h) => h(App),
+}).$mount("#app");//创建一个vue实例，将store注入vue实例成员中，渲染并挂载根组件。
+```
+
+2.单独配置store文件目录来使用vuex
+
+在`main.js`文件中：
+
+```js
+import Vue from "vue";
+import App from "./App.vue";
+import store from "@/store";//将仓库配置单独抽离到store/index.js中进行配置，这里仅导入即可
+new Vue({
+	store,//将导入的store实例注入到vue实例中，以便后续可以通过this.$store可以让vue组件访问到仓库。
+	render : (h) => h(App)
+}).$mount('#app');
+```
+
+在`store/index.js`文件中
+
+```js
+import Vue from 'vue'; //导入vue
+import Vuex from 'vuex'; //导入vuex
+Vue.use(Vuex);//在vue中安装应用vuex插件
+const store = new Vuex.Store({
+	.../*在这里面对仓库进行配置,可以直接在该文件此处进行全局的配置，也可以划分模块，抽离出单独的文件进行局部的配置*/
+})
+export default store;
+```
+
+如果开启模块，单独抽离出文件进行配置，则必须要对`store/index.js`文件进行如下完善。
+
+```js
+import Vue form "vue";
+import Vuex from "vuex";
+Vue.use(vuex);
+import counter from './moduleA';//导入配置好的模块文件
+const store = new Vuex.Store({
+  modules: {
+    moduleA,
+  },//在实例中注入配置好的模块
+  strict: true, // 开启严格模式后，只允许通过mutation改变状态
+});
+export default store;
+```
+
+之后，单独新建一个文件来对模块进行配置就可以了。
+
+## vuex仓库对象的配置以及仓库数据访问或修改方法的调用
+
+### 仓库需要进行那些配置？
+
+vuex仓库的配置一般可以包括全局仓库的配置和模块的配置（局部配置），无论是哪种配置，一般都需要涉及到对state中的一些状态和mutations中的一些事件类型的配置。此外根据项目需要实现的功能可能还会对仓库中的getters，actions进行配置；如果需要继续开启子模块，还存在着对modules的配置；限制仓库内不同模块之间状态的访问以及修改操作，还可能开启命名空间，设置严格模式等。
+
+### 仓库（store）中数据的访问和方法的调用：
+
+对仓库(store)进行访问或对其方法进行调用，需要分情况讨论。
+
+* 一般在仓库配置的相关文件中，可以直接导入store，然后就可以直接通过store进行访问数据或调用修改数据状态方法等操作。
+* 而在vue组件中，因为在`main.js`文件中就将仓库的实例从注入到vue的成员中了，所以通过`this.$store`就可以进行访问数据或调用修改数据状态方法等操作。
+* state与getters的相关数据，一般会注入到计算属性（computed）中去，方便在vue组件中进行使用。mutations和actions的相关方法，一般会注入方法（methods）中去，方便在vue组件中进行调用。
+* 无论是往计算属性中注入数据还是往methods中注入方法，都可以使用vuex提供的辅助函数（mapState,mapGetters,mapMutations,mapActions）来帮忙快速生成成员实例。
+* 开启命名空间后的模块，要对里面的数据进行访问或对方法进行调用，需要在该数据或方法字符串前拼接`模块的命名/`后才能访问。
+
+### 一个仓库配置案例
+
+**仓库配置需求**：
+
+这里我们配置一个新的仓库，该仓库包含一个对数字变化次数进行记录的属性count,初始状态为0。该仓库中数据的状态后续可以通过mutations或actions中的相应操作进行同步或异步的修改。
+
+首先试一试对仓库的全局空间进行配置。
+
+### （1）state
+
+#### 配置state: 
+
+```js
+    state: {
+        count : 0,
+    },
+```
+
+#### 获取state状态：
+
+* 在仓库配置文件中，当对getters,mutations进行配置时，可以将store作为参数传给回调函数,通过`store.state`进行访问。当对actions配置时，则需要传入context（与store拥有相同属性和方法）给回调函数，然后通过`context.state`进行获取。
+
+* 在vue组件中，获取少量数据状态时，可以通过`this.$store.state`进行获取。
+
+* 在vue组件中，获取多种数据状态时，可以通过mapState辅助函数进行获取。
+
+  当一个组件需要获取多个状态的时候，将这些状态都声明为计算属性会有些重复和冗余。为了解决这个问题，我们可以使用 `mapState` 辅助函数帮助我们生成计算属性。
+
+  ```vue
+  //vue组件中
+  ...
+  <script>
+  import { mapState } from "vuex";
+  export default {
+      computed: ...
+  }
+  ...
+  ```
+
+  mapState函数使用前首先需要从vuex插件中具名导入，然后可以直接使用，帮忙生成计算属性对象（这样操作不方便添加其他非仓库计算属性），也可借助展开运算符在computed后对象配置中展开来生成计算属性（可以添加其他计算属性）。
+
+  直接使用：
+
+  ```vue
+  watt//vue组件中
+  ...
+  <script>
+  import { mapState } from "vuex";
+  export default {
+      computed: mapState(...)
+  }
+  ...
+  ```
+
+  展开运算符：
+
+  ```vue
+  //vue组件中
+  ...
+  <script>
+  import { mapState } from "vuex";
+  export default {
+      computed: {
+          ...mapState(...)
+      }
+  }
+  ...
+  ```
+
+  
+
+  mapState在调用时，需要传入一个指向仓库的对象作为参数，但是当映射的计算属性的名称与 state 的子节点名称相同时，我们也可以给 `mapState` 传一个字符串数组来简化参数的传入，方便计算属性的生成。
+
+  传入对象，通过`this.countByObject`可获取：
+
+  ```vue
+  //vue组件中
+  ...
+  <script>
+  import { mapState } from "vuex";
+  export default {
+      computed: {
+          ...mapState({countByObject : "count"}),
+      }
+  }
+  ...
+  ```
+
+  传入数组，通过`this.count`可获取：
+
+  ```js
+  //vue组件中
+  ...
+  <script>
+  import { mapState } from "vuex";
+  export default {
+      computed: {
+          ...mapState(['count']),
+      }
+  }
+  ...
+  ```
+
+### （2）getters
+
+#### 配置getters:
+
+有时候我们需要从 store 中的 state 中派生出一些状态,对原数据进行相应的映射但不改变原数据，这是就可以使用getters。
+
+```js
+getters : {
+	doubleCount(state){
+		return state.count * 2;
+	}
+}
+```
+
+getters配置时接受 state 作为其第一个参数，可以接受其他getters作为第二个参数：
+
+```js
+getters : {
+	doubleCount(state){
+		return state.count * 2;
+	},
+    addDoubleCount(state,getters.doubleCount){
+        return state.count + getters.doubleCount;
+    }
+}
+```
+
+#### 访问getters:
+
+在导入了store的仓库配置文件中，可以通过`store.getters` 对象，以属性的形式访问这些值；
+
+也可以在配置时让 getter 返回一个函数，这样就可以通过方法的形式来实现给 getter 传参，并获取这些值。
+
+返回函数配置：
+
+```js
+getters : {
+	doubleCount(state)=>(id)=>{
+        return state.count * id
+    }
+}
+```
+
+访问getters:
+
+```js
+store.getters.doubleCount(2)
+```
+
+在vue组件中可以通过`this.$store.getters`或者`mapGetters`来获取。
+
+### （3）mutations:
+
+#### 配置mutations:
+
+Vuex 中的 mutation 非常类似于事件：每个 mutation 都有一个字符串的事件类型 (type)和一个回调函数 (handler)。这个回调函数就是我们实际进行状态更改的地方，并且它会接受 state 作为第一个参数。
+
+```js
+    mutations: {
+    increment (state，payload) {
+      	// 变更状态,计数增加number
+        state.count +=payload.number
+        },
+    decrease(state,payload) {
+        // 变更状态,计数减少number
+        state.count -=payload.number   
+        }
+    },
+```
+
+该回调函数接受的第二个为载荷（payload），载荷在该回调函数被调用时传入，一般为想要变更新数据。
+
+**Vuex只接受调用mutations中的函数来对数据状态进行变更。**
+
+#### mutations的提交操作：
+
+**在仓库配置文件中：**
+
+* 需要导入store直接通过`store.commit`调用；
+* 在actions回调函数中使用时，需要从传入context对象作为参数，或从context对象中具名导入后，通过`context.commit`或`commit`调用。(见[下文的actions分发操作](#actions的分发操作))
+
+调用mutations中回调函数的这个操作叫做提交，提交主要以两种方式进行：
+
+方式一：
+
+```js
+store.commit('handler,payload')
+```
+
+该方法需要传入两个参数，一个是mutation中变更状态对应的回调函数名字符串，另一个为想要变更的新数据。
+
+示例调用mutations中的increment，使计数增加10
+
+```js
+store.commit('increment',{number : 10})
+```
+
+方式二：
+
+```js
+store.commit({
+	type : 'handler',
+	payload : payload
+})
+```
+
+该方法需要传入一个对象，一个对象type属性后值为mutation中变更状态对应的回调函数名字符串，另一个属性为想要变更的新数据。
+
+示例调用mutations中的decrease方法，使计数减少10
+
+```js
+store.commit({
+	type : 'decrease',
+	number : 10
+})
+```
+
+**在vue组件中调用：**
+
+当vue组件中提交操作较少时：通过`this.$store.commit`调用
+
+当vue组件中提交操作较多时，借助辅助函数mapMutations生成方法调用。
+
+### （4）actions:
+
+#### 配置actions：
+
+actions的配置类似与mutations，但可以异步对数据状态进行修改，包含了一个异步事件类型和异步回调函数。
+
+该回调函数第一个接受的参数是context（一个与 store实例具有相同方法和属性的对象），在actions中你可以调进行`context.commit` 提交一个 mutation，或者通过 `context.state` 和 `context.getters` 来获取 state 和 getters等操作。
+
+第二个接受的参数也为载荷(payload),想要变更的新数据。
+
+```js
+     actions: {
+        asyIncrement(context,payload) {
+            setTimeout(() => {
+                context.commit('increment',{number : 10})//进行提交操作变更数据数据状态，使数据1s后增加10
+            }, 1000);
+        },
+        asyDecrease() {
+            setTimeout(() => {
+                context.commit('increment',{number : 10})//进行提交操作变更数据数据状态，使数据1s后减少10
+            }, 1000);
+        }
+    }
+```
+
+有时不需要使用到`context.commit` ， `context.state` ， `context.getters` 等所有操作，在传参的时候对context进行解构，直接获取需要使用的方法。上面的actions配置就可以更改为：
+
+```js
+     actions: {
+        asyIncrement({commit},payload) {
+            setTimeout(() => {
+                commit('increment',{number : +payload.number})//进行提交操作变更数据数据状态，使数据1s后增加
+            }, 1000);
+        },
+        asyDecrease({commit},payload) {
+            setTimeout(() => {
+                commit('decrease',{number : +payload.number})//进行提交操作变更数据数据状态，使数据1s后减少
+            }, 1000);
+        }
+    }
+```
+
+
+
+要对actions中回调函数进行调用需要进行dispatch(分发)这一操作。
+
+分发操作的调用类似与store中的提交方法，有两种形式进行调用，都需要传入回调函数名字符串和要想要变更的新数据。
+
+#### actions的分发操作
+
+**在导入store的仓库配置文件中直接调用：**
+
+方式一：
+
+```js
+store.dispatch('asyIncrement',{number:10})
+```
+
+方式二：
+
+```js
+store.dispatch({
+	type : 'asyDecrease',
+	number : 10
+})
+```
+
+**在vue组件中调用：**
+
+当分发操作较少时，可以通过`this.$store.dispatch`进行分发
+
+当分发操作较多时，可以通过mapActions进行分发方法注入组件。
+
+
+
+`store.dispatch` 可以处理被触发的 action 的处理函数返回的 Promise，并且 `store.dispatch` 仍旧返回 Promise。同时，一个 `store.dispatch` 在不同模块中可以触发多个 action 函数。在这种情况下，只有当所有触发函数完成后，返回的 Promise 才会执行。由此可以应付复杂异步处理开发场景。
+
+
+

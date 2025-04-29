@@ -1,0 +1,485 @@
+# Vue Router
+
+## Vue Router是什么？
+
+Vue Router 是 [Vue.js](https://vuejs.org/) 的官方路由。它与 Vue.js 核心深度集成，让用 Vue.js 构建单页应用变得轻而易举。功能包括：
+
+- 嵌套路由映射
+- 动态路由选择
+- 模块化、基于组件的路由配置
+- 路由参数、查询、通配符
+- 展示由 Vue.js 的过渡系统提供的过渡效果
+- 细致的导航控制
+- 自动激活 CSS 类的链接
+- HTML5 history 模式或 hash 模式
+- 可定制的滚动行为
+- URL 的正确编码
+
+## Vue Router安装
+
+### 直接下载/cdn
+
+ 提供了基于 npm 的 CDN 链接。上述链接将始终指向 npm 上的最新版本。 你也可以通过像 `https://unpkg.com/vue-router@4.0.15/dist/vue-router.global.js` 这样的 URL 来使用特定的版本或 Tag。
+
+### npm
+
+```bash
+npm install vue-router@4
+```
+
+### yarn
+
+```bash
+yarn add vue-router@4a
+```
+
+注意安装Vue Router时一定要安装与vue相适应的版本，如果你仍然在使用vue2进行开发，那么安装时请使用`vue-router@3`版本。
+
+## 使用Vue Router进行开发
+
+### Vue Router非模块化开发配置
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body,
+      #app {
+        width: 100%;
+        height: 100%;
+      }
+      #app {
+        display: flex;
+      }
+      #app .nav {
+        flex: 0 0 15%;
+        border-radius: 1%;
+        background: rgb(48, 65, 86);
+      }
+      #app .nav a {
+        display: inline-block;
+        height: 50%;
+        text-align: center;
+        padding: 50% 0px;
+        font-size: 14px;
+        width: 100%;
+        text-decoration: none;
+        color: rgb(191, 203, 217);
+      }
+      #app .nav a:hover {
+        color: rgb(64, 158, 255);
+        background-color: rgb(38, 62, 59);
+      }
+      #app .page {
+        display: flex;
+        margin-left: 10px;
+        flex: 1 1 auto;
+        border: 1px dashed blue;
+        align-items: center;
+        font-size: 3em;
+      }
+      #app .page div{
+        margin: auto;
+      }
+    </style>
+    <title>HTML-VUE-ROUTER应用</title>
+  </head>
+  <body>
+    <!-- 0. 导入Vue和VueRouter -->
+    <script src="https://unpkg.com/vue@2/dist/vue.js"></script>
+    <script src="https://unpkg.com/vue-router@3/dist/vue-router.js"></script>
+
+    <div id="app">
+      <div class="nav">
+        <!-- 5.在页面里使用router-link进行路由跳转，使用router-view渲染路由页面 -->
+        <!-- router-link这篇区域常用与替换导航栏的a标签来实现也买你的无刷新跳转，点击后会改变router-view 渲染的路由页面-->
+        <router-link class="left" :to="{ path: './' }"
+          >点击跳转到Home页面</router-link
+        >
+        <router-link class="right" :to="{ path: './content' }"
+          >点击跳转到Content页面</router-link
+        >
+      </div>
+      <div class="page">
+        <!-- router-view这块区域，会在渲染时根据路由而加载相应的页面 -->
+        <router-view></router-view>
+      </div>
+    </div>
+
+    <script type="module">
+      // 1. 定义 (路由) 组件。
+      const Home = {
+        template: `<div class="nav-home">这里是首页</div>`,
+      };
+      const Content = {
+        template: `<div class="nav-content">这里是内容页</div>`,
+      };
+
+      // 2. 定义路由
+      // 每个路由应该映射一个组件。 其中"component" 可以是
+      // 通过 Vue.extend() 创建的组件构造器，
+      // 或者，只是一个组件配置对象。
+      // 我们晚点再讨论嵌套路由。
+      const routes = [
+        { path: "/", component: Home },
+        { path: "/content", component: Content },
+      ];
+
+      // 3. 创建 router 实例，然后传 `routes` 配置
+      // 你还可以传别的配置参数, 不过先这么简单着吧。
+      const router = new VueRouter({
+        routes, // （缩写）相当于 routes: routes
+      });
+
+      // 4. 创建和挂载根实例。
+      // 记得要通过 router 配置参数注入路由，
+      // 从而让整个应用都有路由功能
+      const app = new Vue({
+        router,
+      }).$mount("#app");
+
+      // 现在，应用已经启动了！
+    </script>
+  </body>
+</html>
+
+```
+
+效果演示：
+
+![](https://mlbzdx.oss-cn-chengdu.aliyuncs.com/Video_2023-08-18_201320.gif)
+
+
+
+### Vue Router模块化开发配置
+
+在模块化开发中，由于可以使用单文件组件，所以开发过程中可以将配置细化成不同的文件：
+
+* `main.js`文件主要负责导入Vue和Vue Router，并将Vue Router创建的实例注入到Vue实例成员中去
+* `@/router`文件目录会给组件匹配到不同的路由规则，然后借助Vue Router的`createRouter`方法创建路由实例。
+  * `@/router/index.js`,这里会进行配置，让Vue可以安装使用Vue Router插件，创建Vue Router的实例导出。
+  * `@/router/routes.js`，这里会将不同的单文件组件（一般放置在`@/views`目录中），匹配不同的路由规则。
+
+`main.js`文件中：
+
+```js
+import Vue from 'vue'
+import App from './App.vue'
+import router from '@/router'
+
+Vue.config.productionTip = false
+
+new Vue({
+  router,
+  render: h => h(App),
+}).$mount('#app')
+
+```
+
+`@/router/index.js`文件中
+
+```js
+import Vue from "vue";
+import VueRouter from "vue-router";
+import routes from "./routes";
+
+Vue.use(VueRouter); // 使用一个vue插件
+
+const router = new VueRouter({
+  // 配置
+  routes, // 路由匹配规则
+  mode: "history",
+});
+
+export default router;
+
+```
+
+`@/router/routes.js`中可以对路由的匹配规则进行配置
+
+* 配置实际上是对routes进行配置，通常routes为一个数组，数组中的每一项是路由对象。
+* 每个对象可以包含以下配置项（并不是每一项都需要，但是path和component这两项是配置时所必需的）
+  * path  你希望配置的路由地址
+  * component  你希望路由关联的vue组件
+  * children  你希望配置的嵌套路由对象
+  * meta  你希望访问该路由时能获得到的额外信息
+  * name 你希望给路由起的名字
+
+配置实例：
+
+```js
+export default [
+  {
+    name: "Home",
+    path: "/",
+    component:()=>import('@/views/Home.vue'),
+    meta: {
+      title: "首页",
+    },
+  },
+  {
+    name: "Content",
+    path: "/content",
+    component:()=>import('@/views/Content.vue'),
+    meta: {
+      title: "内容",
+    },
+  },
+];
+
+```
+
+### Vue Router在vue中的使用
+
+#### `router-link`
+
+请注意，我们没有使用常规的 `a` 标签，而是使用一个自定义组件 `router-link` 来创建链接。这使得 Vue Router 可以在不重新加载页面的情况下更改 URL，处理 URL 的生成以及编码。我们将在后面看到如何从这些功能中获益。
+
+#### `router-view`
+
+`router-view` 将显示与 url 对应的组件。你可以把它放在任何地方，以适应你的布局。
+
+
+
+## 匹配渲染组件
+
+配置路由规则后，还需要将router-view组件插入到要显示的页面组件的合适位置。
+
+vue-router插件提供了router-view组件（或写作VueRouter），这样在浏览器渲染到该组件位置时，会根据当前地址栏中的路由信息匹配合适的组件进行渲染。
+
+```html
+<!-- App.vue -->
+<div class="container">
+  <div>
+    <!-- 公共区域 -->
+  </div>
+  <div>
+    <!-- 页面区域 -->
+    <!-- vue-router 匹配到的组件会渲染到这里 -->
+    <RouterView />
+  </div>
+</div>
+```
+
+## 路径匹配模式
+
+路由模式决定了：
+
+1. 路由从哪里获取访问路径
+2. 路由如何改变访问路径
+
+其中vue-router提供了三种获取与访问路径的模式。
+
+1. hash：默认值。路由从浏览器地址栏中的hash部分获取路径，改变路径也是改变的hash部分。该模式兼容性最好。
+
+   ```
+   http://localhost:8081/#/blog  -->  /blog
+   http://localhost:8081/about#/blog  --> /blog
+   ```
+
+2. history：路由从浏览器地址栏的`location.pathname`中获取路径，改变路径使用的H5的`history api`。该模式可以让地址栏最友好，但是需要浏览器支持`history api`
+
+   ```
+   http://localhost:8081/#/blog  -->  /
+   http://localhost:8081/about#/blog  --> /about
+   http://localhost:8081/blog  --> /blog
+   ```
+
+3. abstract：路由从内存中获取路径，改变路径也只是改动内存中的值。这种模式通常应用到非浏览器环境中。
+
+   ```shell
+   内存： /			-->   /
+   内存： /about	--> /about
+   内存： /blog	  --> /blog
+   ```
+
+
+
+## 获取路由信息
+
+第三库`querystring`提供了parse方法可以解析地址栏的url，并将路径，参数等信息解析出来，封装成一个对象后返回。
+
+而vue-router插件也提供了实例成员（配置）`$route`来获取路由信息。
+
+该方法可以用来获取路由的相关信息，下图是访问`http://localhost:8080/blog/cate/2?page=2&limt=4`地址时返回的`this.$route`对象。
+
+![image-20230515170544410](https://s1.vika.cn/space/2023/05/15/761e2c1d77a24a7bb6647a2237104c50)
+
+在匹配到的组件中使用`this.$route.query`可以获取到当前地址的相关参数信息；使用`this.$route.param`可以获取当前地址的路径（动态路由）信息。
+
+配置的动态路由
+
+```js
+{
+  path: "/article/cate/:categoryId",
+  name: "CategoryBlog",
+  component: Blog
+}
+```
+
+获取路由相关信息
+
+````js
+// 访问 /blog/cate/3
+console.log(this.$route.params) // { categoryId: "3" }
+// 访问 /blog/cate/1
+console.log(this.$route.params) // { categoryId: "1" }
+// 访问 /blog?page=2&limt=4
+console.log(this.$route.query) // {page: '2', limt: '4'}
+````
+
+## 改变路由信息
+
+### 组件内导航
+
+`vue-router`提供了全局的组件`RouterLink`，它的渲染结果是一个`a`元素。
+
+当点击该元素时，会进行无刷新跳转，跳转到`RouterLink`所指向的地址，然后根据地址变化后的路由信息重新对匹配到的组件进行渲染。
+
+```html
+<RouterLink to="/blog">文章</RouterLink>
+<!-- mode:hash 生成 -->
+<a href="#/blog">文章</a>
+<!-- mode:history 生成 -->
+<!-- 为了避免刷新页面，vue-router实际上为它添加了点击事件，并阻止了默认行为，在事件内部使用hitory api更改路径 -->
+<a href="/blog">文章</a>
+```
+
+<img src="http://mdrs.yuanjin.tech/img/20201203150453.png" alt="image-20201203150453332" />
+
+<img src="http://mdrs.yuanjin.tech/img/20201203150918.png" alt="image-20201203150918219" style="zoom:50%;" />
+
+命名路由导航
+
+```js
+<!-- 向to属性传递路由信息对象 RouterLink会根据你传递的信息以及路由配置生成对应的路径 -->
+<RouterLink :to="{ name:'foo' }">go to foo</RouterLink>
+```
+
+动态路由导航
+
+```js
+<router-link to="/article/cate/3">to article of category 3</router-link>
+
+<router-link :to="{
+   name: 'CategoryBlog',
+   params: {
+       categoryId: 3           
+   }                    
+}">to article of category 3</router-link>
+```
+
+### 编程式导航
+
+除了使用`<RouterLink>`超链接导航外，`vue-router`还允许在代码中跳转页面
+
+vue-router提供了实例成员`$router`，其中的`this.router.push`方法可以用于跳转地址。
+
+```js
+this.$router.push("跳转地址"); // 普通跳转
+this.$router.push({ // 命名路由跳转
+  name:"Blog"
+})
+
+this.$router.go(-1); // 回退。类似于 history.go
+```
+
+## 路径激活状态
+
+默认情况下，`vue-router`会用 **当前路径** 匹配 **导航路径** ：
+
+- 如果当前路径是以导航路径开头，则算作匹配，会为导航的a元素添加类名`router-link-active`
+- 如果当前路径完全等于导航路径，则算作精确匹配，会为导航的a元素添加类名`router-link-exact-active`
+
+例如，当前访问的路径是`/blog`，则：
+
+| 导航路径 | 类名                                          |
+| -------- | --------------------------------------------- |
+| /        | router-link-active                            |
+| /blog    | router-link-active   router-link-exact-active |
+| /about   | 无                                            |
+| /message | 无                                            |
+
+
+
+可以为组件`RouterLink`添加bool属性`exact`，将匹配规则改为：必须要精确匹配才能添加匹配类名`router-link-active`
+
+
+
+例如，当前访问的路径是`/blog`，则：
+
+| 导航路径 | exact | 类名                                          |
+| -------- | ----- | --------------------------------------------- |
+| /        | true  | 无                                            |
+| /blog    | false | router-link-active   router-link-exact-active |
+| /about   | true  | 无                                            |
+| /message | true  | 无                                            |
+
+例如，当前访问的路径是`/blog/detail/123`，则：
+
+| 导航路径 | exact | 类名               |
+| -------- | ----- | ------------------ |
+| /        | true  | 无                 |
+| /blog    | false | router-link-active |
+| /about   | true  | 无                 |
+| /message | true  | 无                 |
+
+
+
+另外，可以通过`active-class`属性更改匹配的类名，通过`exact-active-class`更改精确匹配的类名
+
+## watch
+
+利用`watch`配置，可以直接观察某个数据的变化，变化时可以做一些处理
+
+```js
+export default {
+  // ... 其他配置
+  watch: {
+    // 观察 this.$route 的变化，变化后，会调用该函数
+    $route(newVal, oldVal){
+      // newVal：this.$route 新的值，等同 this.$route
+      // oldVal：this.$route 旧的值
+    },
+    // 完整写法
+    $route: {
+      handler(newVal, oldVal){},
+      deep: false, // 是否监听该数据内部属性的变化，默认 false
+      immediate: false // 是否立即执行一次 handler，默认 false
+    }
+    // 观察 this.$route.params 的变化，变化后，会调用该函数
+    ["$route.params"](newVal, oldVal){
+      // newVal：this.$route.params 新的值，等同 this.$route.params
+      // oldVal：this.$route.params 旧的值
+    },
+  	// 完整写法
+    ["$route.params"]: {
+      handler(newVal, oldVal){},
+      deep: false, // 是否监听该数据内部属性的变化，默认 false
+      immediate: false // 是否立即执行一次 handler，默认 false
+    }
+  }
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
