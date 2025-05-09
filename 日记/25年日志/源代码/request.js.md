@@ -245,3 +245,69 @@ export function post(url, data, headers) {
 4. **灵活适配接口**：支持动态传参和自定义请求头，适应多种接口需求。
 
 这种封装方式非常适合中大型前端项目，能够有效提升开发效率和代码质量。
+
+## 改进：
+
+```js
+import axios from "axios";
+import { ElMessage } from "element-plus";
+import store from "@/stores/index.js";
+
+const api = axios.create({
+  baseURL: "/api",
+  timeout: 30000,
+  withCredentials: true,
+});
+
+// 全局拦截器（仅注册一次）
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("teri_token");
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+api.interceptors.response.use(
+  (response) => {
+    const code = response.data.code;
+    if (code && code !== 200) {
+      ElMessage.error(response.data.msg || "未知错误，请打开控制台查看");
+    }
+    return response;
+  },
+  (err) => {
+    console.error("请求错误:", err);
+    if (err.response?.headers?.message === "not login") {
+      store.commit("initData");
+      if (store.state.ws instanceof WebSocket) {
+        store.state.ws.close();
+        store.commit("setWebSocket", null);
+      }
+      localStorage.removeItem("teri_token");
+      ElMessage.error("请登录后查看");
+      store.commit("setLoading", false);
+    } else {
+      ElMessage.error("特丽丽被玩坏了(¯﹃¯)");
+      store.commit("setLoading", false);
+    }
+    return Promise.reject(err);
+  }
+);
+
+export const get = (url, config = {}) => {
+  return api.get(url, {
+    params: config.param,
+    headers: config.headers,
+    ...config,
+  });
+};
+
+export const post = (url, data, config = {}) => {
+  return api.post(url, data, config);
+};
+```
+
